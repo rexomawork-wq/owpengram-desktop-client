@@ -1,0 +1,120 @@
+name: WaveGram Windows x64_x86
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Windows x64_x86
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    env:
+      UPLOAD_ARTIFACT: "true"
+      ONLY_CACHE: "false"
+      PREPARE_PATH: Telegram/build/prepare/prepare.py
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Prepare directories
+        run: |
+          mkdir %userprofile%\TBuild\Libraries
+          mklink /d %GITHUB_WORKSPACE%\TBuild %userprofile%\TBuild
+          echo TBUILD=%GITHUB_WORKSPACE%\TBuild>>%GITHUB_ENV%
+
+      - name: Get repository name
+        shell: bash
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          path: ${{ env.TBUILD }}\${{ env.REPO_NAME }}
+
+      - name: Read SDK version
+        shell: bash
+        run: |
+          DOCPATH=$TBUILD/$REPO_NAME/docs/building-win.md
+          SDK="$(grep "SDK version" $DOCPATH | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/')"
+          echo "SDK=$SDK" >> $GITHUB_ENV
+
+      - name: Native Tools Command Prompt
+        uses: Eden-CI/msvc-dev-cmd@master
+        with:
+          arch: x64_x86
+          sdk: ${{ env.SDK }}
+          toolset: 14.44
+
+      - name: NuGet sources
+        run: |
+          nuget sources Disable -Name "Microsoft Visual Studio Offline Packages"
+          nuget sources Add -Source https://api.nuget.org/v3/index.json & exit 0
+
+      - name: ThirdParty cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.TBUILD }}\ThirdParty
+          key: ${{ runner.OS }}-x64_x86-third-party-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.OS }}-x64_x86-third-party-
+
+      - name: Libraries cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.TBUILD }}\Libraries\*
+            !${{ env.TBUILD }}\Libraries\cache_keys
+            !${{ env.TBUILD }}\Libraries\[qQ]t[_-]*
+          key: ${{ runner.OS }}-x64_x86-libs-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.OS }}-x64_x86-libs-
+
+      - name: Qt cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.TBUILD }}\Libraries\[qQ]t[_-]*
+            ${{ env.TBUILD }}\Libraries\cache_keys\[qQ]t[_-]*
+          key: ${{ runner.OS }}-x64_x86-qt-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.OS }}-x64_x86-qt-
+
+      - name: Libraries
+        run: |
+          %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat skip-release silent
+
+      - name: Build
+        run: |
+          cd %TBUILD%\%REPO_NAME%\Telegram
+          call configure.bat ^
+            x86 ^
+            ^
+            -D TDESKTOP_API_TEST=ON ^
+            -D CMAKE_CONFIGURATION_TYPES=Debug ^
+            -D CMAKE_COMPILE_WARNING_AS_ERROR=ON ^
+            -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
+            -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
+            -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF
+
+          cmake --build ..\out --config Debug --parallel
+
+      - name: Package
+        run: |
+          set OUT=%TBUILD%\%REPO_NAME%\out\Debug
+          mkdir artifact
+          move %OUT%\Telegram.exe artifact\
+          move %OUT%\Updater.exe artifact\
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: WaveGram-Windows-x64_x86
+          path: artifact\
+          if-no-files-found: error
