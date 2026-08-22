@@ -239,5 +239,5 @@ jobs:
         name: Upload artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
         with:
-          name: WaveGram-Windows-x64_x86
+          name: ${{ env.ARTIFACT_NAME }}
           path: artifact\
