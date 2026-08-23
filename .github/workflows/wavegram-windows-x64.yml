@@ -1,4 +1,4 @@
-name: WaveGram Windows x64_x86
+name: WaveGram Windows x64
 
 on:
   workflow_dispatch:
@@ -49,7 +49,7 @@ jobs:
 
     strategy:
       matrix:
-        arch: [x64_x86]
+        arch: [x64]
         qt: [""]
         generator: [""]
 
