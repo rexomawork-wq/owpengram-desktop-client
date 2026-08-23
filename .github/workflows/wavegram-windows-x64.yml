@@ -208,6 +208,27 @@ jobs:
         shell: bash
         run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' ')' -type f ')' -o -empty ')' -delete
 
+      - name: Debug dav1d.
+        shell: bash
+        run: |
+          echo "=== DAV1D FILES ==="
+          find "$LibrariesPath" \( -iname '*dav1d*' -o -name 'dav1d.pc' \) 2>/dev/null || true
+
+          echo "=== DAV1D PKG-CONFIG ==="
+          find "$LibrariesPath" -path '*/pkgconfig/*' -type f 2>/dev/null | grep -i dav1d || true
+
+          echo "=== PKG_CONFIG_PATH ==="
+          echo "$PKG_CONFIG_PATH"
+
+          echo "=== DAV1D VERSION ==="
+          pkg-config --modversion dav1d || true
+
+          echo "=== DAV1D CFLAGS ==="
+          pkg-config --cflags dav1d || true
+
+          echo "=== DAV1D LIBS ==="
+          pkg-config --libs dav1d || true
+
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
         run: |
