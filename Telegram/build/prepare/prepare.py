@@ -1188,6 +1188,17 @@ depends:patches/ffmpeg.patch
     SET MSYS2_PATH_TYPE=inherit
 
     SET "ARCH_PARAM="
+    echo === DAV1D DEBUG BEFORE FFMPEG ===
+    echo LIBS_DIR=%LIBS_DIR%
+    echo PREFIX=%LIBS_DIR%\local
+    dir "%LIBS_DIR%\local\lib\pkgconfig" 2>nul
+    if exist "%LIBS_DIR%\local\lib\pkgconfig\dav1d.pc" (
+        echo dav1d.pc FOUND
+        type "%LIBS_DIR%\local\lib\pkgconfig\dav1d.pc"
+    ) else (
+        echo dav1d.pc MISSING
+    )
+    echo === END DAV1D DEBUG ===
 winarm:
     SET "ARCH_PARAM=--arch=aarch64"
 win:
