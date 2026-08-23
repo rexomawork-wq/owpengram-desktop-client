@@ -1188,21 +1188,21 @@ depends:patches/ffmpeg.patch
     SET MSYS2_PATH_TYPE=inherit
 
     SET "ARCH_PARAM="
-    echo === DAV1D DEBUG BEFORE FFMPEG ===
-    echo LIBS_DIR=%LIBS_DIR%
-    echo PREFIX=%LIBS_DIR%\local
-    dir "%LIBS_DIR%\local\lib\pkgconfig" 2>nul
-    if exist "%LIBS_DIR%\local\lib\pkgconfig\dav1d.pc" (
-        echo dav1d.pc FOUND
-        type "%LIBS_DIR%\local\lib\pkgconfig\dav1d.pc"
-    ) else (
-        echo dav1d.pc MISSING
-    )
-    echo === END DAV1D DEBUG ===
 winarm:
     SET "ARCH_PARAM=--arch=aarch64"
 win:
 depends:patches/build_ffmpeg_win.sh
+    sed -i '/^export PKG_CONFIG_PATH=/a\
+echo "=== DAV1D PKG-CONFIG TEST ==="\
+echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"\
+pkg-config --version\
+echo "--- dav1d version ---"\
+pkg-config --modversion dav1d || exit 1\
+echo "--- dav1d cflags ---"\
+pkg-config --cflags dav1d || exit 1\
+echo "--- dav1d libs ---"\
+pkg-config --libs dav1d || exit 1\
+echo "=== DAV1D PKG-CONFIG OK ==="' ../patches/build_ffmpeg_win.sh
     bash ../patches/build_ffmpeg_win.sh
 mac:
     export PKG_CONFIG_PATH=$USED_PREFIX/lib/pkgconfig
